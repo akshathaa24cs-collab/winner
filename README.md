@@ -24,6 +24,15 @@ npm run dev
 
 The dashboard runs at `http://localhost:5173`.
 
+To open it on a phone connected to the same Wi-Fi network, start both services on the LAN interface:
+
+```powershell
+npm run dev -- --host 0.0.0.0
+& .\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --reload --host 0.0.0.0
+```
+
+Find your computer's IPv4 address with `ipconfig`, then open `http://YOUR_IPV4_ADDRESS:5173` on the phone. The app automatically sends API requests to the same computer on port `8000`. Windows Firewall may ask you to allow Node and Python on private networks.
+
 ### Backend
 
 The backend virtual environment is `backend/.venv`.

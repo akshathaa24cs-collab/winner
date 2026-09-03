@@ -12,6 +12,7 @@ const impactMetrics = [
   ['86%', 'successful conversations', 'voice-first access'],
   ['₹1.53L Cr', 'post-harvest loss / year', 'recoverable value'],
 ]
+const apiBaseUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`
 
 function App() {
   const [activeStep, setActiveStep] = useState('Voice assistant')
@@ -37,7 +38,7 @@ function App() {
     const formData = new FormData()
     formData.append('image', file)
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/api/grade`, { method: 'POST', body: formData })
+      const response = await fetch(`${apiBaseUrl}/api/grade`, { method: 'POST', body: formData })
       const result = await response.json()
       if (!response.ok || result.error) throw new Error(result.error || 'Unable to grade this image.')
       setGradeResult(result)
@@ -53,7 +54,7 @@ function App() {
     setIsProcessing(true)
     setApiError('')
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/api/voice`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message, language }) })
+      const response = await fetch(`${apiBaseUrl}/api/voice`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message, language }) })
       const result = await response.json()
       if (!response.ok) throw new Error(result.detail?.[0]?.msg || 'Assistant is unavailable.')
       setVoiceReply(result.reply)

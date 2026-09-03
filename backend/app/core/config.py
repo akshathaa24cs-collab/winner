@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     app_name: str = "AgriSahayak API"
     environment: str = "development"
     database_url: str = "sqlite:///./agrisahayak.db"
-    cors_origins: str = "http://localhost:5173"
+    cors_origins: str = "*"
     upload_dir: str = "../data/uploads"
     ai_api_url: str = "https://api.groq.com/openai/v1/chat/completions"
     ai_api_key: str = ""
