@@ -1,0 +1,28 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - postgres
+  frontend:
+    build: .
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: agrisahayak
+      POSTGRES_USER: agri
+      POSTGRES_PASSWORD: agri
+    ports:
+      - "5432:5432"
+    volumes:
+      - agrisahayak-data:/var/lib/postgresql/data
+
+volumes:
+  agrisahayak-data:

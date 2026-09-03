@@ -25,6 +25,7 @@ function App() {
   const [apiError, setApiError] = useState('')
   const [mobileOpen, setMobileOpen] = useState(false)
   const fileInput = useRef(null)
+  const recognition = useRef(null)
   const selectStep = (step) => { setActiveStep(step); document.getElementById('workspace')?.scrollIntoView({ behavior: 'smooth' }) }
   const handleFile = async (event) => {
     const file = event.target.files?.[0]
@@ -46,8 +47,8 @@ function App() {
       setIsProcessing(false)
     }
   }
-  const askAssistant = async () => {
-    const message = voiceText.trim() || 'Which crop should I sell first?'
+  const askAssistant = async (messageOverride = '') => {
+    const message = messageOverride.trim() || voiceText.trim() || 'Which crop should I sell first?'
     setIsListening(false)
     setIsProcessing(true)
     setApiError('')
@@ -61,6 +62,32 @@ function App() {
     } finally {
       setIsProcessing(false)
     }
+  }
+  const toggleVoiceCapture = () => {
+    if (isListening) {
+      recognition.current?.stop()
+      setIsListening(false)
+      return
+    }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      setApiError('Voice capture is not supported in this browser. Type your question instead.')
+      return
+    }
+    const voiceCapture = new SpeechRecognition()
+    voiceCapture.lang = language === 'Hindi' ? 'hi-IN' : language === 'Marathi' ? 'mr-IN' : language === 'Telugu' ? 'te-IN' : 'en-IN'
+    voiceCapture.interimResults = false
+    voiceCapture.onresult = (event) => {
+      const transcript = event.results[0][0].transcript
+      setVoiceText(transcript)
+      askAssistant(transcript)
+    }
+    voiceCapture.onerror = () => setApiError('I could not hear that. Please try again or type your question.')
+    voiceCapture.onend = () => setIsListening(false)
+    recognition.current = voiceCapture
+    setApiError('')
+    setIsListening(true)
+    voiceCapture.start()
   }
 
   return <main className="app-shell">
@@ -76,7 +103,7 @@ function App() {
     </section>
 
     <section className="workflow" id="workspace"><div className="section-heading"><div><p className="eyebrow">Your harvest workspace</p><h2>What do you need today?</h2></div><div className="language-picker"><span>Language</span><select value={language} onChange={(event) => setLanguage(event.target.value)}><option>Hindi</option><option>English</option><option>Marathi</option><option>Telugu</option></select><ChevronDown size={15} /></div></div><div className="step-tabs">{steps.map(({ label, icon: Icon }, index) => <button key={label} className={activeStep === label ? 'step-tab selected' : 'step-tab'} onClick={() => setActiveStep(label)}><span className="step-number">0{index + 1}</span><Icon size={18} />{label}{index < steps.length - 1 && <ArrowRight className="step-arrow" size={16} />}</button>)}</div>
-      <div className="workspace-grid"><section className="voice-panel panel"><div className="panel-top"><div><span className="tag green">AI VOICE ASSISTANT</span><h3>Ask anything about your farm.</h3></div><span className="online"><i /> Online</span></div><div className="conversation"><div className="assistant-avatar"><Sprout size={20} /></div><div className="bubble assistant-bubble"><small>AgriSahayak · just now</small><p>{voiceReply || 'Namaste Ramesh! How can I help you today?'}</p></div><div className="bubble farmer-bubble"><small>You · just now</small><p>{voiceText || 'Which crop should I sell first?'}</p></div></div><div className="voice-input"><input value={voiceText} onChange={(event) => setVoiceText(event.target.value)} placeholder="Type a question or tap the mic" onKeyDown={(event) => event.key === 'Enter' && askAssistant()} /><button onClick={askAssistant} aria-label="Send question"><ArrowRight size={16} /></button></div><button className={isListening ? 'listen-button listening' : 'listen-button'} onClick={() => isListening ? askAssistant() : setIsListening(true)}><span className="listen-icon">{isListening ? <span className="bars"><i /><i /><i /><i /></span> : <Mic size={24} />}</span><span>{isListening ? 'Listening… tap to finish' : 'Tap to speak'}</span><small>{isListening ? 'I am hearing you' : 'Hindi · English · Marathi'}</small></button><div className="voice-note"><span className="lock-dot">⌁</span> {isProcessing ? 'AgriSahayak is thinking…' : 'Your conversation stays private'} <span className="voice-time">0:00 / 0:30</span></div></section>
+      <div className="workspace-grid"><section className="voice-panel panel"><div className="panel-top"><div><span className="tag green">AI VOICE ASSISTANT</span><h3>Ask anything about your farm.</h3></div><span className="online"><i /> Online</span></div><div className="conversation"><div className="assistant-avatar"><Sprout size={20} /></div><div className="bubble assistant-bubble"><small>AgriSahayak · just now</small><p>{voiceReply || 'Namaste Ramesh! How can I help you today?'}</p></div><div className="bubble farmer-bubble"><small>You · just now</small><p>{voiceText || 'Which crop should I sell first?'}</p></div></div><div className="voice-input"><input value={voiceText} onChange={(event) => setVoiceText(event.target.value)} placeholder="Type a question or tap the mic" onKeyDown={(event) => event.key === 'Enter' && askAssistant()} /><button onClick={() => askAssistant()} aria-label="Send question"><ArrowRight size={16} /></button></div><button className={isListening ? 'listen-button listening' : 'listen-button'} onClick={toggleVoiceCapture}><span className="listen-icon">{isListening ? <span className="bars"><i /><i /><i /><i /></span> : <Mic size={24} />}</span><span>{isListening ? 'Listening… tap to finish' : 'Tap to speak'}</span><small>{isListening ? 'I am hearing you' : 'Hindi · English · Marathi'}</small></button><div className="voice-note"><span className="lock-dot">⌁</span> {isProcessing ? 'AgriSahayak is thinking…' : 'Your conversation stays private'} <span className="voice-time">0:00 / 0:30</span></div></section>
         <section className="grade-panel panel"><div className="panel-top"><div><span className="tag orange">CROP GRADING</span><h3>See what your crop is worth.</h3></div><span className="info-badge">AI + expert</span></div><div className={fileName ? 'upload-box has-file' : 'upload-box'} onClick={() => fileInput.current?.click()}><input ref={fileInput} type="file" accept="image/*" onChange={handleFile} /><div className="upload-icon">{fileName ? <Check size={25} /> : <Upload size={24} />}</div><strong>{fileName || 'Upload a crop photo'}</strong><span>{isProcessing ? 'AI is assessing your crop…' : fileName ? 'Assessment complete' : 'JPG or PNG · up to 10 MB'}</span>{!fileName && <button type="button">Browse files</button>}</div>{gradeResult && <div className="grade-result"><span className="grade-score">{gradeResult.grade}</span><span><b>{gradeResult.market === 'food' ? 'Food marketplace' : 'Waste marketplace'}</b><small>{Math.round(gradeResult.confidence * 100)}% confidence · {gradeResult.reason}</small></span></div>}<div className="grade-footer"><div><span className="mini-icon"><ScanLine size={16} /></span><span><b>Fair, transparent grading</b><small>Size · colour · ripeness · defects</small></span></div><button className="text-button" onClick={() => fileInput.current?.click()}>Use camera <Camera size={15} /></button></div></section></div>
       {apiError && <p className="api-error">{apiError}</p>}
     </section>

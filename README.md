@@ -11,6 +11,7 @@ AgriSahayak is a voice-first agricultural marketplace demo for the Smart India H
 - `models/`: local YOLO and speech model files
 - `docs/`: architecture notes
 - `frontend/`: reserved frontend module boundary
+- `Dockerfile`, `backend/Dockerfile`, `docker-compose.yml`: container deployment
 
 ## Setup
 
@@ -42,6 +43,8 @@ Available API endpoints:
 - `POST /api/voice`: Ollama-powered assistant response with local fallback
 - `POST /api/grade`: image validation and baseline crop assessment
 - `POST /api/route`: food or waste marketplace destination
+
+The implemented flow follows the PPT end to end: farmer voice/app input -> assistant guidance -> crop image assessment -> quality grade -> smart routing -> food buyer or waste/resource buyer -> measurable value recovery.
 
 Run backend tests from the repository root:
 
@@ -77,6 +80,16 @@ Optional computer-vision dependencies:
 ```
 
 The current crop grader intentionally has a deterministic Pillow baseline. Add YOLO weights under `models/` and connect them in `backend/app/services/grading.py` for production crop-specific grading. Whisper and Piper can be added behind the same voice endpoint when speech model files are available.
+
+### Docker deployment
+
+Copy `backend/.env.example` to `backend/.env`, then run the complete stack:
+
+```powershell
+docker compose up --build
+```
+
+This starts the React/Nginx frontend, FastAPI backend, and PostgreSQL service. The browser speech capture remains lightweight and runs in the farmer's browser; the backend AI provider can be Groq or another OpenAI-compatible hosted service.
 
 ## Verification
 
