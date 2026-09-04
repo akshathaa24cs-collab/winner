@@ -1,7 +1,21 @@
-node_modules
-dist
-backend/.venv
-backend/.env
+# Git
 .git
-__pycache__
-.pytest_cache
+.gitignore
+
+# Frontend dev artifacts (build step copies what's needed)
+frontend/node_modules
+frontend/.env*
+
+# Backend dev artifacts
+backend/.venv
+backend/__pycache__
+backend/.pytest_cache
+backend/tests
+
+# Data / models (not needed in image)
+data/uploads
+models
+
+# Docs
+docs
+README.md

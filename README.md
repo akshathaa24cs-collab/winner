@@ -1,109 +1,246 @@
-# AgriSahayak
+# AgriSahayak — AI-Powered Voice-First Agricultural Marketplace
 
-AgriSahayak is a voice-first agricultural marketplace demo for the Smart India Hackathon. Farmers can ask questions in their language, upload a crop image, receive a transparent quality assessment, and see whether it is routed to food buyers or the waste marketplace.
+> **Smart India Hackathon 2026 · Team Avengers**
 
-## Project layout
+AgriSahayak is a voice-first, multilingual platform that guides Indian farmers through the complete post-harvest journey:  
+**Voice Guidance → AI Crop Grading → Smart Marketplace Routing → Value Recovery**
 
-- `src/`: React + Vite frontend
-- `backend/app/`: FastAPI backend
-- `backend/tests/`: backend tests
-- `data/uploads/`: local crop image uploads
-- `models/`: local YOLO and speech model files
-- `docs/`: architecture notes
-- `frontend/`: reserved frontend module boundary
-- `Dockerfile`, `backend/Dockerfile`, `docker-compose.yml`: container deployment
+Produce is never wasted — it is automatically routed to either the **Food Marketplace** (retailers, wholesalers, consumers) or the **Waste/Resource Marketplace** (composters, biogas plants, recyclers).
 
-## Setup
+---
 
-### Frontend
+## Project Structure
 
+```
+winner/
+├── frontend/              ← React + Vite (all UI code)
+│   ├── index.html
+│   ├── vite.config.js
+│   ├── eslint.config.js
+│   ├── package.json
+│   ├── public/            ← static assets (favicon, icons)
+│   └── src/
+│       ├── main.jsx       ← React entry point
+│       ├── App.jsx        ← full app with STT + TTS + grading + routing
+│       ├── App.css        ← all styles
+│       └── assets/
+│           └── hero.png
+├── backend/               ← FastAPI Python backend
+│   ├── Dockerfile
+│   ├── .env.example       ← copy to .env and fill in keys
+│   ├── requirements.txt
+│   ├── requirements-ml.txt
+│   └── app/
+│       ├── main.py        ← FastAPI app + CORS
+│       ├── api/
+│       │   └── routes.py  ← /api/voice, /api/grade, /api/route, /api/health
+│       ├── core/
+│       │   └── config.py  ← pydantic-settings config
+│       └── services/
+│           ├── assistant.py   ← AI voice assistant (Groq/Ollama/fallback)
+│           ├── grading.py     ← colour + sharpness crop heuristic
+│           └── marketplace.py ← food vs waste routing logic
+├── data/
+│   └── uploads/           ← crop image uploads (git-ignored except .gitkeep)
+├── models/                ← placeholder for YOLO weights (add .pt files here)
+├── docs/
+│   └── architecture.md
+├── Dockerfile             ← multi-stage: Node build → Nginx serve
+├── docker-compose.yml     ← frontend + backend + PostgreSQL
+├── .gitignore
+├── .dockerignore
+└── README.md
+```
+
+---
+
+## Features
+
+| Feature | How it works |
+|---|---|
+| 🎤 **Speech-to-Text (STT)** | Browser Web Speech API — no server needed. Supports Hindi, English, Marathi, Telugu |
+| 🔊 **Text-to-Speech (TTS)** | Browser SpeechSynthesis API — reads AI replies aloud in the correct language. Mute toggle included |
+| 🌱 **Crop Grading** | Heuristic image analysis (brightness, sharpness, colour channel ratios) using Pillow. Grades: A+, A (food), B+, B (waste) |
+| 🛒 **Marketplace Routing** | A+/A → Food Marketplace · B+/B → Waste/Resource Marketplace |
+| 🤖 **AI Voice Assistant** | Groq (cloud, free tier) → Ollama (local) → deterministic fallback |
+| 🌐 **Multilingual** | Hindi (`hi-IN`), English (`en-IN`), Marathi (`mr-IN`), Telugu (`te-IN`) |
+
+---
+
+## Tech Stack
+
+### What you need to install on your device
+
+#### System requirements
+| Tool | Version | Why |
+|---|---|---|
+| **Node.js** | ≥ 20 (LTS) | Run Vite dev server and build frontend |
+| **Python** | ≥ 3.11 | Run FastAPI backend |
+| **Git** | any | Clone the repo |
+| **Chrome or Edge** | latest | Required for STT (Web Speech API) |
+
+> **Note:** Firefox does not support the Web Speech API. Use Chrome or Edge for voice features.
+
+#### Optional
+| Tool | Why |
+|---|---|
+| **Ollama** | Local AI model — free, offline. Pull `llama3.2:3b` |
+| **Docker + Docker Compose** | Run the full stack in containers |
+| **PostgreSQL** | Production database (SQLite used by default in dev) |
+
+---
+
+## Quick Start
+
+### 1. Clone
 ```powershell
+git clone <repo-url>
+cd winner
+```
+
+### 2. Backend setup
+```powershell
+cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+Copy-Item .env.example .env
+# Edit .env — at minimum add your AI_API_KEY (or leave blank for local fallback)
+cd ..
+```
+
+Start the backend:
+```powershell
+& .\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --reload
+```
+Backend API: `http://localhost:8000` · Interactive docs: `http://localhost:8000/docs`
+
+### 3. Frontend setup
+```powershell
+cd frontend
 npm install
 npm run dev
 ```
+Open: **`http://localhost:5173`**
 
-The dashboard runs at `http://localhost:5173`.
+---
 
-To open it on a phone connected to the same Wi-Fi network, start both services on the LAN interface:
+## AI Configuration
 
-```powershell
-npm run dev -- --host 0.0.0.0
-& .\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --reload --host 0.0.0.0
+The assistant uses a **three-tier fallback** — you always get a response:
+
+```
+Groq (cloud, fast, free) → Ollama (local) → Static fallback
 ```
 
-Find your computer's IPv4 address with `ipconfig`, then open `http://YOUR_IPV4_ADDRESS:5173` on the phone. The app automatically sends API requests to the same computer on port `8000`. Windows Firewall may ask you to allow Node and Python on private networks.
-
-### Backend
-
-The backend virtual environment is `backend/.venv`.
-
-```powershell
-& .\backend\.venv\Scripts\Activate.ps1
-python -m pip install -r backend\requirements.txt
-Copy-Item backend\.env.example backend\.env
-python -m uvicorn app.main:app --app-dir backend --reload
-```
-
-The API runs at `http://localhost:8000`; interactive docs are at `/docs`.
-
-Available API endpoints:
-
-- `GET /api/health`: service status
-- `POST /api/voice`: Ollama-powered assistant response with local fallback
-- `POST /api/grade`: image validation and baseline crop assessment
-- `POST /api/route`: food or waste marketplace destination
-
-The implemented flow follows the PPT end to end: farmer voice/app input -> assistant guidance -> crop image assessment -> quality grade -> smart routing -> food buyer or waste/resource buyer -> measurable value recovery.
-
-Run backend tests from the repository root:
-
-```powershell
-& .\backend\.venv\Scripts\python.exe -m pytest backend\tests -q
-```
-
-### Lightweight AI options
-
-Ollama is optional. The recommended low-memory option is a hosted API such as Groq. It does not download a model to your laptop and has a generous free developer tier. Create a Groq API key, then put it in `backend/.env`:
-
+### Option A — Groq (recommended, free)
+1. Get a free API key at [console.groq.com](https://console.groq.com)
+2. Add to `backend/.env`:
 ```env
-AI_API_URL=https://api.groq.com/openai/v1/chat/completions
-AI_API_KEY=your-groq-key
+AI_API_KEY=gsk_your_groq_key_here
 AI_MODEL=llama-3.1-8b-instant
 ```
 
-The same adapter works with OpenAI-compatible providers such as OpenRouter, Together, or a company gateway by changing `AI_API_URL` and `AI_MODEL`. Keep the key only in `backend/.env`; never put it in React code or commit it.
-
-Ollama remains available as a local alternative. If you choose it, install Ollama, pull a model, and leave it running:
-
+### Option B — Ollama (local, offline)
+1. Download [Ollama](https://ollama.com)
+2. Pull a model and start:
 ```powershell
 ollama pull llama3.2:3b
 ollama serve
 ```
 
-The default configuration is in `backend/.env.example`. The provider order is hosted AI (when `AI_API_KEY` exists), then Ollama (when it is running), then a deterministic local fallback. This means the app works even with no AI service installed.
+### Option C — No config needed
+The app works with a deterministic local fallback out of the box.
 
-Optional computer-vision dependencies:
+---
 
+## API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/health` | Service status check |
+| `POST` | `/api/voice` | AI assistant — body: `{ message, language }` |
+| `POST` | `/api/grade` | Crop grading — multipart image upload |
+| `POST` | `/api/route` | Marketplace routing — body: `{ grade, confidence }` |
+
+---
+
+## Running on a Phone (same Wi-Fi)
+
+Start both services on LAN:
 ```powershell
-& .\backend\.venv\Scripts\python.exe -m pip install -r backend\requirements-ml.txt
+# Terminal 1 — Frontend
+cd frontend
+npm run dev -- --host 0.0.0.0
+
+# Terminal 2 — Backend
+& .\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --reload --host 0.0.0.0
 ```
 
-The current crop grader intentionally has a deterministic Pillow baseline. Add YOLO weights under `models/` and connect them in `backend/app/services/grading.py` for production crop-specific grading. Whisper and Piper can be added behind the same voice endpoint when speech model files are available.
+Find your PC's IP with `ipconfig`, then open `http://YOUR_IP:5173` on the phone.  
+Windows Firewall may ask to allow Node and Python — allow on private networks.
 
-### Docker deployment
+---
 
-Copy `backend/.env.example` to `backend/.env`, then run the complete stack:
+## Docker (full stack)
 
 ```powershell
+Copy-Item backend\.env.example backend\.env
+# Edit backend\.env — add AI_API_KEY if using Groq
 docker compose up --build
 ```
 
-This starts the React/Nginx frontend, FastAPI backend, and PostgreSQL service. The browser speech capture remains lightweight and runs in the farmer's browser; the backend AI provider can be Groq or another OpenAI-compatible hosted service.
+| Service | URL |
+|---|---|
+| Frontend (Nginx) | `http://localhost:5173` |
+| Backend (FastAPI) | `http://localhost:8000` |
+| PostgreSQL | `localhost:5432` |
+
+---
+
+## What Was Built (vs PPT)
+
+| PPT Feature | Status | Notes |
+|---|---|---|
+| AI Voice Assistant (STT) | ✅ | Browser Web Speech API, 4 languages |
+| TTS — speaks reply aloud | ✅ | Browser SpeechSynthesis, mute toggle, language-aware |
+| Crop image grading | ✅ | Colour + sharpness heuristic (Pillow). Grades A+/A/B+/B |
+| Smart Marketplace Routing | ✅ | Food vs Waste/Resource with buyer types |
+| End-to-end flow | ✅ | Voice → Grade → Route → Marketplace panel |
+| Multilingual (4 languages) | ✅ | STT + TTS both switch language |
+| Voice-first (no literacy needed) | ✅ | Mic button + spoken reply |
+| Value Recovery routing | ✅ | B/B+ grades auto-route to biogas/composters |
+| YOLO crop-specific grading | 🔜 | Add weights to `models/` and connect in `grading.py` |
+| IoT sensor integration | 🔜 | Architecture placeholder in `docs/` |
+
+---
 
 ## Verification
 
 ```powershell
+# Frontend lint + build
+cd frontend
 npm run lint
 npm run build
+
+# Backend tests
 & .\backend\.venv\Scripts\python.exe -m pytest backend\tests -q
 ```
+
+---
+
+## Crop Grading Logic
+
+The heuristic in `backend/app/services/grading.py` checks:
+
+1. **Size** — rejects images < 200 × 200 px
+2. **Brightness** — rejects too dark (< 40) or over-exposed (> 220)
+3. **Sharpness** — pixel variance < 180 → blurry, send to waste
+4. **Green-channel ratio** — ≥ 0.38 → A+ (very fresh), ≥ 0.30 → A (food-grade)
+5. **Red-channel dominance** — high red + low green → B (possible spoilage)
+
+To add YOLO: install `ultralytics` from `requirements-ml.txt`, place `.pt` weights in `models/`, and replace the body of `assess_crop()` with YOLO inference.
+
+---
+
+© 2026 AgriSahayak · Team Avengers · Smart India Hackathon 2026

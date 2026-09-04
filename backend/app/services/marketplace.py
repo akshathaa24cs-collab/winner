@@ -10,16 +10,23 @@ class MarketplaceRoute:
 
 
 def choose_market(grade: str, confidence: float) -> MarketplaceRoute:
-    if grade.upper() == "A" and confidence >= 0.6:
+    """
+    Route produce to food or waste/resource marketplace.
+
+    Food-grade:  A+, A  (with confidence ≥ 0.60)
+    Waste-grade: B+, B  (below-threshold — value-recovery routing)
+    """
+    food_grades = {"A+", "A"}
+    if grade.upper() in food_grades and confidence >= 0.60:
         return MarketplaceRoute(
-            "food",
-            "Food marketplace",
-            ["Retailers", "Wholesalers", "Consumers"],
-            "Food-grade produce matched to buyers for the highest value recovery.",
+            market="food",
+            destination="Food Marketplace",
+            buyer_types=["Retailers", "Wholesalers", "Consumers"],
+            reason="Food-grade produce matched to buyers for highest value recovery.",
         )
     return MarketplaceRoute(
-        "waste",
-        "Waste marketplace",
-        ["Composters", "Biogas plants", "Recyclers"],
-        "Below-grade produce redirected to a resource buyer instead of being discarded.",
+        market="waste",
+        destination="Waste / Resource Marketplace",
+        buyer_types=["Composters", "Biogas plants", "Recyclers"],
+        reason="Below-threshold produce redirected to resource buyers instead of being discarded.",
     )
