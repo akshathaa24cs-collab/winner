@@ -111,7 +111,7 @@ cd ..
 
 Start the backend:
 ```powershell
-& .\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --reload
+& .\backend\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --reload --host 0.0.0.0
 ```
 Backend API: `http://localhost:8000` · Interactive docs: `http://localhost:8000/docs`
 
@@ -121,7 +121,8 @@ cd frontend
 npm install
 npm run dev
 ```
-Open: **`http://localhost:5173`**
+- Open on PC: **`http://localhost:5173`**
+- Open on Mobile (same Wi-Fi): **`http://<Your-IPv4-Address>:5173`** (e.g. `http://10.124.240.145:5173`)
 
 ---
 
